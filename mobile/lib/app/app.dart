@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'app/app_shell.dart';
-
-void main() {
-  runApp(const FinBalanceApp());
-}
+import 'app_shell.dart';
 
 class FinBalanceApp extends StatelessWidget {
   const FinBalanceApp({super.key});
@@ -13,20 +9,14 @@ class FinBalanceApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-
       title: '智衡 FinBalance',
-
       theme: ThemeData(
         useMaterial3: true,
-
-        scaffoldBackgroundColor:
-            const Color(0xFFF5F7FC),
-
+        scaffoldBackgroundColor: const Color(0xFFF6F7FB),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF3157E8),
         ),
       ),
-
       home: const AppShell(),
     );
   }
