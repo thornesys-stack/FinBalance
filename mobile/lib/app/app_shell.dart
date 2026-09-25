@@ -3,6 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../pages/home/home_page.dart';
+import '../pages/bills/bills_page.dart';
+import '../pages/analysis/analysis_page.dart';
+import '../pages/ai/ai_page.dart';
+import '../pages/profile/profile_page.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -14,10 +18,10 @@ class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
   final List<Widget> _pages = const [
     HomePage(),
-    _PlaceholderPage(title: '账单'),
-    _PlaceholderPage(title: '分析'),
-    _PlaceholderPage(title: 'AI'),
-    _PlaceholderPage(title: '我的'),
+    BillsPage(),
+    AnalysisPage(),
+    AiPage(),
+    ProfilePage(),
   ];
   final List<IconData> _icons = const [
     Icons.home_rounded,
