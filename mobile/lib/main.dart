@@ -1,33 +1,7 @@
 import 'package:flutter/material.dart';
-
-import 'app/app_shell.dart';
+import 'app/app.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const FinBalanceApp());
-}
-
-class FinBalanceApp extends StatelessWidget {
-  const FinBalanceApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-
-      title: '智衡 FinBalance',
-
-      theme: ThemeData(
-        useMaterial3: true,
-
-        scaffoldBackgroundColor:
-            const Color(0xFFF5F7FC),
-
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF3157E8),
-        ),
-      ),
-
-      home: const AppShell(),
-    );
-  }
 }

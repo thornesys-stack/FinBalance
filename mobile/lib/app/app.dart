@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_shell.dart';
+import '../core/theme/app_theme.dart';
 
 class FinBalanceApp extends StatelessWidget {
   const FinBalanceApp({super.key});
@@ -10,13 +11,7 @@ class FinBalanceApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: '智衡 FinBalance',
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF6F7FB),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF3157E8),
-        ),
-      ),
+      theme: AppTheme.light(),
       home: const AppShell(),
     );
   }

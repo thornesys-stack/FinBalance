@@ -2,11 +2,11 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import '../pages/home/home_page.dart';
-import '../pages/bills/bills_page.dart';
-import '../pages/analysis/analysis_page.dart';
-import '../pages/ai/ai_page.dart';
-import '../pages/profile/profile_page.dart';
+import '../features/home/presentation/home_page.dart';
+import '../features/transactions/presentation/transactions_page.dart';
+import '../features/ai/presentation/ai_page.dart';
+import '../features/analysis/presentation/analysis_page.dart';
+import '../features/account/presentation/account_page.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -14,152 +14,106 @@ class AppShell extends StatefulWidget {
   @override
   State<AppShell> createState() => _AppShellState();
 }
+
 class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
-  final List<Widget> _pages = const [
+
+  static const _items = [
+    (Icons.home_rounded, '首页'),
+    (Icons.receipt_long_rounded, '交易'),
+    (Icons.auto_awesome_rounded, 'AI'),
+    (Icons.bar_chart_rounded, '分析'),
+    (Icons.person_outline_rounded, '账户'),
+  ];
+
+  final _pages = const [
     HomePage(),
-    BillsPage(),
-    AnalysisPage(),
+    TransactionsPage(),
     AiPage(),
-    ProfilePage(),
+    AnalysisPage(),
+    AccountPage(),
   ];
-  final List<IconData> _icons = const [
-    Icons.home_rounded,
-    Icons.receipt_long_rounded,
-    Icons.bar_chart_rounded,
-    Icons.auto_awesome_rounded,
-    Icons.person_outline_rounded,
-  ];
-  final List<String> _labels = const [
-    '首页',
-    '账单',
-    '分析',
-    'AI',
-    '我的',
-  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FC),
       body: Stack(
         children: [
-          // 页面内容
           Positioned.fill(
             child: Padding(
-              padding: const EdgeInsets.only(
-                top: 100,
-              ),
+              padding: const EdgeInsets.only(top: 92),
               child: IndexedStack(
                 index: _currentIndex,
                 children: _pages,
               ),
             ),
           ),
-          // 固定顶部栏
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: _buildTopBar(),
           ),
-          // 底部磨砂导航栏
           Positioned(
             left: 14,
             right: 14,
             bottom: 12,
-            child: _buildGlassNavigationBar(),
+            child: _buildNavigationBar(),
           ),
         ],
       ),
     );
   }
-// 顶部固定栏
+
   Widget _buildTopBar() {
     return ClipRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: 18,
-          sigmaY: 18,
-        ),
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
-          height: 100,
-
-          padding: const EdgeInsets.only(
-            left: 22,
-            right: 22,
-            top: 30,
-          ),
+          height: 92,
+          padding: const EdgeInsets.fromLTRB(22, 28, 22, 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFF5F7FC).withOpacity(0.86),
-
+            color: const Color(0xFFF5F7FC).withOpacity(0.9),
             border: Border(
               bottom: BorderSide(
                 color: Colors.white.withOpacity(0.45),
-                width: 0.8,
               ),
             ),
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 左侧：智衡
-              Expanded(
+              const Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-
+                  children: [
                     Text(
                       '智衡',
                       style: TextStyle(
-                        fontSize: 23,
+                        fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF111827),
-                        height: 1.0,
                       ),
                     ),
-
-                    SizedBox(height: 5),
-
+                    SizedBox(height: 3),
                     Text(
                       'FinBalance',
                       style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
+                        fontSize: 12,
                         color: Color(0xFF9AA4B5),
-                        height: 1.0,
                       ),
                     ),
                   ],
                 ),
               ),
-                // 右侧：消息
-                GestureDetector(
-                onTap: () {
-                // 后续接入消息页面
-                },
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Icon(
-                      Icons.notifications_none_rounded,
-                      size: 30,
-                      color: const Color(0xFF111827),
-                    ),
-                    // 红色未读提示
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFF5C67),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ],
+              IconButton(
+                tooltip: '消息',
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  size: 28,
+                  color: Color(0xFF111827),
                 ),
               ),
             ],
@@ -168,114 +122,37 @@ class _AppShellState extends State<AppShell> {
       ),
     );
   }
-// 底部磨砂导航栏
-  Widget _buildGlassNavigationBar() {
+
+  Widget _buildNavigationBar() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
-
       child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: 18,
-          sigmaY: 18,
-        ),
-
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           height: 82,
-
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.68),
-
             borderRadius: BorderRadius.circular(30),
-
-            border: Border.all(
-              color: Colors.white.withOpacity(0.75),
-              width: 1,
-            ),
-
-            boxShadow: [
+            border: Border.all(color: Colors.white.withOpacity(0.75)),
+            boxShadow: const [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Color(0x10000000),
                 blurRadius: 25,
-                offset: const Offset(0, 8),
+                offset: Offset(0, 8),
               ),
             ],
           ),
-
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-
             children: List.generate(
-              _labels.length,
-              (index) => _buildNavigationItem(index),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-// 导航按钮
-  Widget _buildNavigationItem(int index) {
-    final bool selected = _currentIndex == index;
-
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-
-        onTap: () {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(
-              milliseconds: 220,
-            ),
-
-            width: 58,
-            height: 68,
-
-            padding: const EdgeInsets.symmetric(
-              vertical: 7,
-            ),
-
-            decoration: BoxDecoration(
-              color: selected
-                  ? const Color(0xFFE8EEFF).withOpacity(0.85)
-                  : Colors.transparent,
-
-              borderRadius: BorderRadius.circular(22),
-            ),
-
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-
-              children: [
-
-                Icon(
-                  _icons[index],
-                  size: 25,
-                  color: selected
-                      ? const Color(0xFF3157E8)
-                      : const Color(0xFF8FA2C8),
+              _items.length,
+              (index) => Expanded(
+                child: _NavigationItem(
+                  icon: _items[index].$1,
+                  label: _items[index].$2,
+                  selected: _currentIndex == index,
+                  onTap: () => setState(() => _currentIndex = index),
                 ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  _labels[index],
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: selected
-                        ? FontWeight.w600
-                        : FontWeight.w500,
-                    color: selected
-                        ? const Color(0xFF3157E8)
-                        : const Color(0xFF8FA2C8),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -283,22 +160,59 @@ class _AppShellState extends State<AppShell> {
     );
   }
 }
-// 临时页面
-class _PlaceholderPage extends StatelessWidget {
-  final String title;
 
-  const _PlaceholderPage({
-    required this.title,
+class _NavigationItem extends StatelessWidget {
+  const _NavigationItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
   });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Center(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 58,
+          height: 68,
+          decoration: BoxDecoration(
+            color: selected
+                ? const Color(0xFFE8EEFF).withOpacity(0.85)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 25,
+                color: selected
+                    ? const Color(0xFF3157E8)
+                    : const Color(0xFF8FA2C8),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected
+                      ? const Color(0xFF3157E8)
+                      : const Color(0xFF8FA2C8),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
