@@ -1,24 +1,21 @@
-class HomeOverview {
+class TransactionSummary {
   final double income;
   final double expense;
   final double balance;
-  final double savingsRate;
 
-  const HomeOverview({
+  const TransactionSummary({
     required this.income,
     required this.expense,
     required this.balance,
-    required this.savingsRate,
   });
 
-  factory HomeOverview.fromJson(
+  factory TransactionSummary.fromJson(
     Map<String, dynamic> json,
   ) {
-    return HomeOverview(
+    return TransactionSummary(
       income: _toDouble(json['income']),
       expense: _toDouble(json['expense']),
       balance: _toDouble(json['balance']),
-      savingsRate: _toDouble(json['savings_rate']),
     );
   }
 

@@ -1,0 +1,24 @@
+class User {
+  final String id;
+  final String name;
+  final String email;
+  final String? avatarUrl;
+
+  const User({
+    required this.id,
+    required this.name,
+    required this.email,
+    this.avatarUrl,
+  });
+
+  factory User.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return User(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      avatarUrl: json['avatar_url']?.toString(),
+    );
+  }
+}

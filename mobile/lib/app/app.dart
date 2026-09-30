@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_shell.dart';
-import '../core/theme/app_theme.dart';
+import 'app_theme.dart';
 
 class FinBalanceApp extends StatelessWidget {
   const FinBalanceApp({super.key});
@@ -9,9 +9,9 @@ class FinBalanceApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: '智衡 FinBalance',
-      theme: AppTheme.light(),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
       home: const AppShell(),
     );
   }

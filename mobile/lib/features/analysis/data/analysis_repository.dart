@@ -1,20 +1,20 @@
 import '../../../core/constants/api_endpoints.dart';
 import '../../../core/network/api_client.dart';
-import '../domain/home_overview.dart';
+import '../domain/analysis_overview.dart';
 
-class HomeRepository {
+class AnalysisRepository {
   final ApiClient _apiClient;
 
-  HomeRepository({
+  AnalysisRepository({
     ApiClient? apiClient,
   }) : _apiClient = apiClient ?? ApiClient();
 
-  Future<HomeOverview> getOverview() async {
+  Future<AnalysisOverview> getAnalysis() async {
     final response = await _apiClient.get(
-      ApiEndpoints.homeOverview,
+      ApiEndpoints.analysis,
     );
 
-    return HomeOverview.fromJson(
+    return AnalysisOverview.fromJson(
       Map<String, dynamic>.from(response),
     );
   }

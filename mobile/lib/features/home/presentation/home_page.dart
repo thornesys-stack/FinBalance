@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/network/api_client.dart';
-import '../../../core/network/api_exception.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../data/home_repository.dart';
 import '../domain/home_overview.dart';
 
@@ -14,373 +13,281 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final ApiClient _apiClient;
-  late final HomeRepository _repository;
+  final HomeRepository _repository = HomeRepository();
 
-  HomeOverview? _overview;
-  bool _loading = true;
-  String? _error;
+  late Future<HomeOverview> _futureOverview;
 
   @override
   void initState() {
     super.initState();
-    _apiClient = ApiClient();
-    _repository = HomeRepository(apiClient: _apiClient);
-    _load();
+
+    _futureOverview = _repository.getOverview();
   }
 
-  Future<void> _load() async {
+  Future<void> _refresh() async {
     setState(() {
-      _loading = true;
-      _error = null;
+      _futureOverview = _repository.getOverview();
     });
 
-    try {
-      final overview = await _repository.fetchOverview();
-      if (!mounted) return;
-      setState(() {
-        _overview = overview;
-        _loading = false;
-      });
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.message;
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _error = '暂时无法连接服务器，请稍后重试。';
-        _loading = false;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _apiClient.dispose();
-    super.dispose();
+    await _futureOverview;
   }
 
   @override
   Widget build(BuildContext context) {
-    final data = _overview;
+    return SafeArea(
+      child: RefreshIndicator(
+        onRefresh: _refresh,
+        child: FutureBuilder<HomeOverview>(
+          future: _futureOverview,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState ==
+                ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
 
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 120),
-        children: [
-          _buildGreeting(),
-          const SizedBox(height: 18),
-          _buildAssetCard(data),
-          const SizedBox(height: 14),
-          _buildCashFlowCard(data),
-          const SizedBox(height: 14),
-          _buildRiskCard(),
-          const SizedBox(height: 14),
-          _buildAiSummaryCard(data),
-        ],
+            if (snapshot.hasError) {
+              return _ErrorView(
+                message: snapshot.error.toString(),
+                onRetry: _refresh,
+              );
+            }
+
+            final overview = snapshot.data;
+
+            if (overview == null) {
+              return const Center(
+                child: Text('暂无财务数据'),
+              );
+            }
+
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(20),
+              children: [
+                const Text(
+                  'FinBalance',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                const Text(
+                  '掌握你的每一笔财务变化',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                _BalanceCard(
+                  overview: overview,
+                ),
+
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SummaryCard(
+                        title: '收入',
+                        amount: overview.income,
+                        icon: Icons.arrow_downward,
+                        color: AppColors.income,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _SummaryCard(
+                        title: '支出',
+                        amount: overview.expense,
+                        icon: Icons.arrow_upward,
+                        color: AppColors.expense,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.savings_outlined,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 16),
+                        const Expanded(
+                          child: Text(
+                            '储蓄率',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${overview.savingsRate.toStringAsFixed(1)}%',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
+}
 
-  Widget _buildGreeting() {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '资产总览',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        SizedBox(height: 5),
-        Text(
-          '清晰知道你的钱在哪里，以及最近发生了什么。',
-          style: TextStyle(
-            fontSize: 14,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
+class _BalanceCard extends StatelessWidget {
+  final HomeOverview overview;
 
-  Widget _buildAssetCard(HomeOverview? data) {
-    final hasAssetData = data?.totalAssets != null;
-    final hasNetWorth = data?.netWorth != null;
-    final hasLiability = data?.totalLiabilities != null;
+  const _BalanceCard({
+    required this.overview,
+  });
 
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
           colors: [
-            Color(0xFF3157E8),
-            Color(0xFF5477F2),
+            Color(0xFF3157D5),
+            Color(0xFF6B7FE8),
           ],
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x243157E8),
-            blurRadius: 28,
-            offset: Offset(0, 12),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.account_balance_wallet_rounded,
-                color: Colors.white70,
-                size: 19,
-              ),
-              SizedBox(width: 8),
-              Text(
-                '总资产',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-            ],
+          const Text(
+            '本期结余',
+            style: TextStyle(
+              color: Colors.white70,
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            _money(
-              data?.totalAssets,
-              currency: data?.baseCurrency ?? 'CNY',
-              placeholder: hasAssetData ? null : '—',
+            CurrencyFormatter.format(
+              overview.balance,
             ),
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -1,
-            ),
-          ),
-          if (!hasAssetData && !_loading)
-            const Padding(
-              padding: EdgeInsets.only(top: 4),
-              child: Text(
-                '等待资产账户接口提供实时总资产',
-                style: TextStyle(color: Colors.white60, fontSize: 12),
-              ),
-            ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(
-                child: _assetMetric(
-                  '净资产',
-                  _money(
-                    data?.netWorth,
-                    currency: data?.baseCurrency ?? 'CNY',
-                    placeholder: hasNetWorth ? null : '—',
-                  ),
-                ),
-              ),
-              Expanded(
-                child: _assetMetric(
-                  '总负债',
-                  _money(
-                    data?.totalLiabilities,
-                    currency: data?.baseCurrency ?? 'CNY',
-                    placeholder: hasLiability ? null : '—',
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _assetMetric(String title, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: const TextStyle(color: Colors.white60, fontSize: 12)),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCashFlowCard(HomeOverview? data) {
-    return _sectionCard(
-      title: '本期资金流',
-      icon: Icons.swap_vert_rounded,
-      child: Row(
-        children: [
-          Expanded(
-            child: _flowItem(
-              '收入',
-              _money(data?.income, currency: data?.baseCurrency ?? 'CNY'),
-              Icons.south_west_rounded,
-            ),
-          ),
-          Expanded(
-            child: _flowItem(
-              '支出',
-              _money(data?.expense, currency: data?.baseCurrency ?? 'CNY'),
-              Icons.north_east_rounded,
-            ),
-          ),
-          Expanded(
-            child: _flowItem(
-              '结余',
-              _money(
-                data?.periodBalance,
-                currency: data?.baseCurrency ?? 'CNY',
-              ),
-              Icons.account_balance_rounded,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _flowItem(String title, String value, IconData icon) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: AppTheme.primary),
-        const SizedBox(height: 8),
-        Text(title, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
+class _SummaryCard extends StatelessWidget {
+  final String title;
+  final double amount;
+  final IconData icon;
+  final Color color;
+
+  const _SummaryCard({
+    required this.title,
+    required this.amount,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              color: color,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              CurrencyFormatter.format(amount),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
+}
 
-  Widget _buildRiskCard() {
-    return _sectionCard(
-      title: '账户安全',
-      icon: Icons.shield_outlined,
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF7EF),
-              borderRadius: BorderRadius.circular(14),
+class _ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorView({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.cloud_off_outlined,
+              size: 48,
             ),
-            child: const Icon(
-              Icons.verified_user_outlined,
-              color: Color(0xFF2E9B59),
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Text(
-              '暂无已接入的风险事件。后续 AI 将根据交易时间、地点、金额等信号进行风险检测。',
+            const SizedBox(height: 16),
+            const Text(
+              '无法获取财务数据',
               style: TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 13,
-                height: 1.45,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAiSummaryCard(HomeOverview? data) {
-    final summary = data?.aiSummary;
-    return _sectionCard(
-      title: 'AI 财务摘要',
-      icon: Icons.auto_awesome_rounded,
-      child: Text(
-        summary?.isNotEmpty == true
-            ? summary!
-            : 'AI 财务摘要将在后端提供分析结果后显示。这里不会使用虚构的分析内容。',
-        style: const TextStyle(
-          color: AppTheme.textSecondary,
-          fontSize: 13,
-          height: 1.5,
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: onRetry,
+              child: const Text('重新加载'),
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  Widget _sectionCard({
-    required String title,
-    required IconData icon,
-    required Widget child,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE9EDF4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 19, color: AppTheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          child,
-        ],
-      ),
-    );
-  }
-
-  String _money(
-    double? value, {
-    required String currency,
-    String? placeholder,
-  }) {
-    if (value == null) return placeholder ?? '—';
-    final symbol = switch (currency.toUpperCase()) {
-      'CNY' => '¥',
-      'USD' => '\$',
-      'JPY' => '¥',
-      'EUR' => '€',
-      'GBP' => '£',
-      _ => currency.toUpperCase(),
-    };
-    return '$symbol${value.toStringAsFixed(2)}';
   }
 }

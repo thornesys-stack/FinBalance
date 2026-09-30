@@ -2,84 +2,136 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import 'api_config.dart';
 import 'api_exception.dart';
 
 class ApiClient {
+  final http.Client _client;
+
   ApiClient({
     http.Client? client,
-    String? baseUrl,
-  })  : _client = client ?? http.Client(),
-        _baseUrl = baseUrl ?? ApiConfig.baseUrl;
+  }) : _client = client ?? http.Client();
 
-  final http.Client _client;
-  final String _baseUrl;
-
-  Future<Map<String, dynamic>> get(
+  Future<dynamic> get(
     String path, {
     Map<String, String>? queryParameters,
   }) async {
-    final uri = Uri.parse('$_baseUrl$path').replace(
+    final uri = _buildUri(
+      path,
       queryParameters: queryParameters,
     );
 
     final response = await _client.get(
       uri,
-      headers: const {'Accept': 'application/json'},
+      headers: _headers,
     );
 
-    return _decode(response);
+    return _handleResponse(response);
   }
 
-  Future<Map<String, dynamic>> post(
+  Future<dynamic> post(
     String path, {
     Map<String, dynamic>? body,
   }) async {
-    final uri = Uri.parse('$_baseUrl$path');
+    final uri = _buildUri(path);
 
     final response = await _client.post(
       uri,
-      headers: const {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(body ?? <String, dynamic>{}),
+      headers: _headers,
+      body: body == null ? null : jsonEncode(body),
     );
 
-    return _decode(response);
+    return _handleResponse(response);
   }
 
-  Map<String, dynamic> _decode(http.Response response) {
-    dynamic decoded;
-    try {
-      decoded = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
-    } catch (_) {
-      throw ApiException(
-        statusCode: response.statusCode,
-        message: '服务器返回了无法解析的数据。',
-      );
+  Future<dynamic> put(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    final uri = _buildUri(path);
+
+    final response = await _client.put(
+      uri,
+      headers: _headers,
+      body: body == null ? null : jsonEncode(body),
+    );
+
+    return _handleResponse(response);
+  }
+
+  Future<dynamic> delete(
+    String path,
+  ) async {
+    final uri = _buildUri(path);
+
+    final response = await _client.delete(
+      uri,
+      headers: _headers,
+    );
+
+    return _handleResponse(response);
+  }
+
+  Uri _buildUri(
+    String path, {
+    Map<String, String>? queryParameters,
+  }) {
+    final uri = Uri.parse(
+      'http://127.0.0.1:8000$path',
+    );
+
+    if (queryParameters == null ||
+        queryParameters.isEmpty) {
+      return uri;
     }
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final message = decoded is Map<String, dynamic>
-          ? (decoded['detail'] ?? decoded['message'] ?? decoded['error'])
-          : null;
+    return uri.replace(
+      queryParameters: queryParameters,
+    );
+  }
 
-      throw ApiException(
-        statusCode: response.statusCode,
-        message: message?.toString() ?? '请求失败。',
-        details: decoded,
-      );
+  Map<String, String> get _headers {
+    return const {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+  }
+
+  dynamic _handleResponse(
+    http.Response response,
+  ) {
+    final statusCode = response.statusCode;
+
+    dynamic decodedBody;
+
+    if (response.body.isNotEmpty) {
+      try {
+        decodedBody = jsonDecode(response.body);
+      } catch (_) {
+        decodedBody = response.body;
+      }
     }
 
-    if (decoded is Map<String, dynamic>) return decoded;
+    if (statusCode >= 200 && statusCode < 300) {
+      return decodedBody;
+    }
+
+    String message = '服务器请求失败';
+
+    if (decodedBody is Map<String, dynamic>) {
+      final detail = decodedBody['detail'];
+
+      if (detail is String) {
+        message = detail;
+      }
+    }
 
     throw ApiException(
-      statusCode: response.statusCode,
-      message: '服务器返回的数据结构不是 JSON 对象。',
-      details: decoded,
+      message,
+      statusCode: statusCode,
     );
   }
 
-  void dispose() => _client.close();
+  void dispose() {
+    _client.close();
+  }
 }
