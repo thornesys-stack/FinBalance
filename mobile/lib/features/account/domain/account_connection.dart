@@ -11,9 +11,7 @@ class AccountConnection {
     this.connectedAt,
   });
 
-  factory AccountConnection.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory AccountConnection.fromJson(Map<String, dynamic> json) {
     return AccountConnection(
       id: json['id']?.toString() ?? '',
       provider: json['provider']?.toString() ?? '',
@@ -27,8 +25,6 @@ class AccountConnection {
       return null;
     }
 
-    return DateTime.tryParse(
-      value.toString(),
-    );
+    return DateTime.tryParse(value.toString());
   }
 }

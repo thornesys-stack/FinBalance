@@ -5,17 +5,13 @@ import '../domain/home_overview.dart';
 class HomeRepository {
   final ApiClient _apiClient;
 
-  HomeRepository({
-    ApiClient? apiClient,
-  }) : _apiClient = apiClient ?? ApiClient();
+  HomeRepository({ApiClient? apiClient})
+    : _apiClient = apiClient ?? ApiClient();
 
   Future<HomeOverview> getOverview() async {
-    final response = await _apiClient.get(
-      ApiEndpoints.homeOverview,
-    );
+    final response = await _apiClient.get(ApiEndpoints.homeOverview);
 
-    return HomeOverview.fromJson(
-      Map<String, dynamic>.from(response),
-    );
+    // 成功体是 {code, message, data} 外壳，HomeOverview 只需要 data。
+    return HomeOverview.fromJson(ApiClient.unwrapMap(response));
   }
 }

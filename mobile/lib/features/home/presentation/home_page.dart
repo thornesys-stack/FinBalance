@@ -40,11 +40,8 @@ class _HomePageState extends State<HomePage> {
         child: FutureBuilder<HomeOverview>(
           future: _futureOverview,
           builder: (context, snapshot) {
-            if (snapshot.connectionState ==
-                ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
             }
 
             if (snapshot.hasError) {
@@ -57,9 +54,7 @@ class _HomePageState extends State<HomePage> {
             final overview = snapshot.data;
 
             if (overview == null) {
-              return const Center(
-                child: Text('暂无财务数据'),
-              );
+              return const Center(child: Text('暂无财务数据'));
             }
 
             return ListView(
@@ -68,26 +63,19 @@ class _HomePageState extends State<HomePage> {
               children: [
                 const Text(
                   'FinBalance',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 6),
 
                 const Text(
                   '掌握你的每一笔财务变化',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                  ),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
 
                 const SizedBox(height: 24),
 
-                _BalanceCard(
-                  overview: overview,
-                ),
+                _BalanceCard(overview: overview),
 
                 const SizedBox(height: 20),
 
@@ -128,9 +116,7 @@ class _HomePageState extends State<HomePage> {
                         const Expanded(
                           child: Text(
                             '储蓄率',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                         Text(
@@ -156,9 +142,7 @@ class _HomePageState extends State<HomePage> {
 class _BalanceCard extends StatelessWidget {
   final HomeOverview overview;
 
-  const _BalanceCard({
-    required this.overview,
-  });
+  const _BalanceCard({required this.overview});
 
   @override
   Widget build(BuildContext context) {
@@ -166,27 +150,17 @@ class _BalanceCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF3157D5),
-            Color(0xFF6B7FE8),
-          ],
+          colors: [Color(0xFF3157D5), Color(0xFF6B7FE8)],
         ),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '本期结余',
-            style: TextStyle(
-              color: Colors.white70,
-            ),
-          ),
+          const Text('本期结余', style: TextStyle(color: Colors.white70)),
           const SizedBox(height: 12),
           Text(
-            CurrencyFormatter.format(
-              overview.balance,
-            ),
+            CurrencyFormatter.format(overview.balance),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 32,
@@ -220,24 +194,13 @@ class _SummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              icon,
-              color: color,
-            ),
+            Icon(icon, color: color),
             const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-              ),
-            ),
+            Text(title, style: const TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 6),
             Text(
               CurrencyFormatter.format(amount),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -250,10 +213,7 @@ class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorView({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorView({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -263,28 +223,16 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.cloud_off_outlined,
-              size: 48,
-            ),
+            const Icon(Icons.cloud_off_outlined, size: 48),
             const SizedBox(height: 16),
             const Text(
               '无法获取财务数据',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-            ),
+            Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 20),
-            FilledButton(
-              onPressed: onRetry,
-              child: const Text('重新加载'),
-            ),
+            FilledButton(onPressed: onRetry, child: const Text('重新加载')),
           ],
         ),
       ),

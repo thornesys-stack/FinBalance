@@ -9,14 +9,11 @@ class AnalysisPage extends StatefulWidget {
   const AnalysisPage({super.key});
 
   @override
-  State<AnalysisPage> createState() =>
-      _AnalysisPageState();
+  State<AnalysisPage> createState() => _AnalysisPageState();
 }
 
-class _AnalysisPageState
-    extends State<AnalysisPage> {
-  final AnalysisRepository _repository =
-      AnalysisRepository();
+class _AnalysisPageState extends State<AnalysisPage> {
+  final AnalysisRepository _repository = AnalysisRepository();
 
   late Future<AnalysisOverview> _futureAnalysis;
 
@@ -24,14 +21,12 @@ class _AnalysisPageState
   void initState() {
     super.initState();
 
-    _futureAnalysis =
-        _repository.getAnalysis();
+    _futureAnalysis = _repository.getAnalysis();
   }
 
   void _reload() {
     setState(() {
-      _futureAnalysis =
-          _repository.getAnalysis();
+      _futureAnalysis = _repository.getAnalysis();
     });
   }
 
@@ -41,11 +36,8 @@ class _AnalysisPageState
       child: FutureBuilder<AnalysisOverview>(
         future: _futureAnalysis,
         builder: (context, snapshot) {
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -60,9 +52,7 @@ class _AnalysisPageState
           final analysis = snapshot.data;
 
           if (analysis == null) {
-            return const Center(
-              child: Text('暂无分析数据'),
-            );
+            return const Center(child: Text('暂无分析数据'));
           }
 
           return ListView(
@@ -70,57 +60,41 @@ class _AnalysisPageState
             children: [
               const Text(
                 '财务分析',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 20),
 
               _MetricCard(
                 title: '总收入',
-                value:
-                    CurrencyFormatter.format(
-                  analysis.totalIncome,
-                ),
+                value: CurrencyFormatter.format(analysis.totalIncome),
               ),
 
               const SizedBox(height: 12),
 
               _MetricCard(
                 title: '总支出',
-                value:
-                    CurrencyFormatter.format(
-                  analysis.totalExpense,
-                ),
+                value: CurrencyFormatter.format(analysis.totalExpense),
               ),
 
               const SizedBox(height: 12),
 
               _MetricCard(
                 title: '储蓄率',
-                value:
-                    '${analysis.savingsRate.toStringAsFixed(1)}%',
+                value: '${analysis.savingsRate.toStringAsFixed(1)}%',
               ),
 
               const SizedBox(height: 24),
 
               const Text(
                 '支出分类',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 12),
 
               ...analysis.categories.map(
-                (category) =>
-                    _CategoryItem(
-                  category: category,
-                ),
+                (category) => _CategoryItem(category: category),
               ),
             ],
           );
@@ -134,10 +108,7 @@ class _MetricCard extends StatelessWidget {
   final String title;
   final String value;
 
-  const _MetricCard({
-    required this.title,
-    required this.value,
-  });
+  const _MetricCard({required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -149,17 +120,12 @@ class _MetricCard extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                ),
+                style: const TextStyle(color: AppColors.textSecondary),
               ),
             ),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -171,9 +137,7 @@ class _MetricCard extends StatelessWidget {
 class _CategoryItem extends StatelessWidget {
   final CategoryAnalysis category;
 
-  const _CategoryItem({
-    required this.category,
-  });
+  const _CategoryItem({required this.category});
 
   @override
   Widget build(BuildContext context) {
@@ -182,16 +146,11 @@ class _CategoryItem extends StatelessWidget {
       child: ListTile(
         title: Text(category.category),
         subtitle: LinearProgressIndicator(
-          value: (category.percentage / 100)
-              .clamp(0, 1),
+          value: (category.percentage / 100).clamp(0, 1),
         ),
         trailing: Text(
-          CurrencyFormatter.format(
-            category.amount,
-          ),
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          CurrencyFormatter.format(category.amount),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
     );

@@ -1,150 +1,218 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/currency_formatter.dart';
-import '../../../core/utils/date_formatter.dart';
+import '../../../core/domain/transaction/transaction_domain.dart';
 import '../data/transaction_repository.dart';
-import '../domain/transaction.dart';
-import '../domain/transaction_response.dart';
 
 class TransactionPage extends StatefulWidget {
-  const TransactionPage({super.key});
+  final TransactionRepository transactionRepository;
+
+  const TransactionPage({super.key, required this.transactionRepository});
 
   @override
-  State<TransactionPage> createState() =>
-      _TransactionPageState();
+  State<TransactionPage> createState() => _TransactionPageState();
 }
 
-class _TransactionPageState
-    extends State<TransactionPage> {
-  final TransactionRepository _repository =
-      TransactionRepository();
+class _TransactionPageState extends State<TransactionPage> {
+  bool _isLoading = true;
 
-  late Future<TransactionResponse>
-      _futureTransactions;
+  List<Transaction> _transactions = [];
+
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
 
-    _futureTransactions =
-        _repository.getTransactions();
+    _loadTransactions();
   }
 
-  void _reload() {
+  Future<void> _loadTransactions() async {
     setState(() {
-      _futureTransactions =
-          _repository.getTransactions();
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final response = await widget.transactionRepository.getTransactions();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _transactions = response.items;
+
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+
+        _errorMessage = '暂时无法加载账单数据';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: FutureBuilder<TransactionResponse>(
-        future: _futureTransactions,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+    return Scaffold(
+      appBar: AppBar(title: const Text('账单')),
+      body: RefreshIndicator(onRefresh: _loadTransactions, child: _buildBody()),
+    );
+  }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: FilledButton(
-                onPressed: _reload,
-                child: const Text('加载失败，重新加载'),
-              ),
-            );
-          }
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-          final response = snapshot.data;
-
-          if (response == null ||
-              response.items.isEmpty) {
-            return const Center(
-              child: Text('暂无交易记录'),
-            );
-          }
-
-          return ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              const Text(
-                '收支流水',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+    if (_errorMessage != null) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 180),
+          Center(
+            child: Column(
+              children: [
+                const Icon(Icons.cloud_off_outlined, size: 48),
+                const SizedBox(height: 16),
+                Text(_errorMessage!),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _loadTransactions,
+                  child: const Text('重新加载'),
                 ),
-              ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
-              const SizedBox(height: 20),
+    if (_transactions.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 200),
+          Center(
+            child: Column(
+              children: [
+                Icon(Icons.receipt_long_outlined, size: 52),
+                SizedBox(height: 16),
+                Text('暂时没有账单'),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
-              ...response.items.map(
-                (transaction) =>
-                    _TransactionItem(
-                  transaction: transaction,
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _transactions.length,
+      itemBuilder: (context, index) {
+        final transaction = _transactions[index];
+
+        return _TransactionItem(transaction: transaction);
+      },
     );
   }
 }
 
 class _TransactionItem extends StatelessWidget {
-  final FinancialTransaction transaction;
+  final Transaction transaction;
 
-  const _TransactionItem({
-    required this.transaction,
-  });
+  const _TransactionItem({required this.transaction});
 
   @override
   Widget build(BuildContext context) {
-    final isIncome =
-        transaction.type.toLowerCase() == 'income';
+    final isIncome = transaction.type == TransactionType.income;
 
-    final color = isIncome
-        ? AppColors.income
-        : AppColors.expense;
+    final isRefund = transaction.type == TransactionType.refund;
+
+    final isTransfer = transaction.type == TransactionType.transfer;
+
+    final amount = _formatAmount(transaction);
+
+    String prefix = '-';
+
+    if (isIncome || isRefund) {
+      prefix = '+';
+    }
+
+    if (isTransfer) {
+      prefix = '';
+    }
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 8,
-        ),
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.1),
-          child: Icon(
-            isIncome
-                ? Icons.arrow_downward
-                : Icons.arrow_upward,
-            color: color,
-          ),
-        ),
+        leading: CircleAvatar(child: Icon(_iconForTransaction(transaction))),
         title: Text(
-          transaction.title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
+          transaction.merchant?.isNotEmpty == true
+              ? transaction.merchant!
+              : transaction.category.name,
         ),
-        subtitle: Text(
-          '${transaction.category} · ${DateFormatter.format(transaction.date)}',
-        ),
+        subtitle: Text(transaction.description ?? transaction.category.name),
         trailing: Text(
-          '${isIncome ? '+' : '-'}${CurrencyFormatter.format(transaction.amount)}',
+          '$prefix$amount',
           style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
+            color: _colorForTransaction(context, transaction),
           ),
         ),
       ),
     );
+  }
+
+  IconData _iconForTransaction(Transaction transaction) {
+    switch (transaction.type) {
+      case TransactionType.income:
+        return Icons.arrow_downward;
+
+      case TransactionType.expense:
+        return Icons.arrow_upward;
+
+      case TransactionType.transfer:
+        return Icons.swap_horiz;
+
+      case TransactionType.refund:
+        return Icons.undo;
+    }
+  }
+
+  Color _colorForTransaction(BuildContext context, Transaction transaction) {
+    switch (transaction.type) {
+      case TransactionType.income:
+      case TransactionType.refund:
+        return Colors.green;
+
+      case TransactionType.expense:
+        return Colors.red;
+
+      case TransactionType.transfer:
+        return Theme.of(context).colorScheme.primary;
+    }
+  }
+
+  String _formatAmount(Transaction transaction) {
+    final money = transaction.amount;
+
+    final currency = money.currency;
+
+    var divisor = 1;
+
+    for (var i = 0; i < currency.decimalDigits; i++) {
+      divisor *= 10;
+    }
+
+    final major = money.amountMinor / divisor;
+
+    return '${currency.symbol}'
+        '${major.toStringAsFixed(currency.decimalDigits)}';
   }
 }
